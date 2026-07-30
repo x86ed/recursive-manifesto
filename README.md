@@ -1,0 +1,2 @@
+# recursive-manifesto
+Recursive Manifesto
