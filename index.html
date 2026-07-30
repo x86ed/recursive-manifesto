@@ -330,7 +330,7 @@
 </head>
 <body>
 
-  <div class="wordmark">THE <span>RECURSIVE</span> MANIFESTO — v∞</div>
+  <div class="wordmark">THE <span>RECURSIVE</span> MANIFESTO — <span id="version-tag">v∞</span></div>
   <button class="copy-btn" type="button" aria-label="Copy manifesto text to clipboard">COPY</button>
 
   <div class="stage" id="stage"></div>
@@ -345,8 +345,26 @@
 <script>
   // ---- EDIT THIS: the GitHub repo that hosts this page ----
   const REPO_URL = "https://github.com/x86ed/recursive-manifesto";
+  const REPO_API_URL = REPO_URL.replace('https://github.com/', 'https://api.github.com/repos/') + '/tags';
   const FORK_URL = REPO_URL + "/fork";
   // -----------------------------------------------------------
+
+  const versionTagEl = document.getElementById('version-tag');
+
+  async function updateVersionLabel(){
+    if (!versionTagEl) return;
+    try {
+      const response = await fetch(REPO_API_URL, {
+        headers: { Accept: 'application/vnd.github+json' }
+      });
+      if (!response.ok) throw new Error('Unable to load tags');
+      const tags = await response.json();
+      const latestTag = Array.isArray(tags) && tags.length ? tags[0].name : '';
+      versionTagEl.textContent = latestTag ? (latestTag.startsWith('v') ? latestTag : 'v' + latestTag) : 'v∞';
+    } catch (err) {
+      versionTagEl.textContent = 'v∞';
+    }
+  }
 
   const TENETS = [
     { label: "00", type: "prose",   text: "Process cannot exist without goals." },
@@ -765,6 +783,7 @@
   buildDots();
   mountSlot(slotA, 0);
   mountSlot(slotB, 1);
+  updateVersionLabel();
   requestAnimationFrame(tick);
 </script>
 </body>
