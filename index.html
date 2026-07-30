@@ -347,6 +347,7 @@
   const REPO_URL = "https://github.com/x86ed/recursive-manifesto";
   const REPO_API_URL = REPO_URL.replace('https://github.com/', 'https://api.github.com/repos/') + '/tags';
   const FORK_URL = REPO_URL + "/fork";
+  const FALLBACK_VERSION_TAG = 'v0.1.0';
   // -----------------------------------------------------------
 
   const REPO_MATCH = REPO_URL.match(/^https:\/\/github\.com\/([^\/]+)\/([^\/]+)$/);
@@ -356,20 +357,78 @@
   const versionTagEl = document.getElementById('version-tag');
   let latestTagName = '';
 
+  function getParamFromSearchOrHash(name){
+    const url = new URL(window.location.href);
+    const fromSearch = url.searchParams.get(name);
+    if (fromSearch) return fromSearch;
+
+    const hash = url.hash.startsWith('#') ? url.hash.slice(1) : url.hash;
+    const hashParams = new URLSearchParams(hash);
+    return hashParams.get(name) || '';
+  }
+
+  function bootstrapTokenFromLocation(){
+    const token = getParamFromSearchOrHash('gh_pat') || getParamFromSearchOrHash('gh_token');
+    if (!token) return '';
+
+    const url = new URL(window.location.href);
+    url.searchParams.delete('gh_pat');
+    url.searchParams.delete('gh_token');
+
+    const hash = url.hash.startsWith('#') ? url.hash.slice(1) : url.hash;
+    if (hash){
+      const hashParams = new URLSearchParams(hash);
+      hashParams.delete('gh_pat');
+      hashParams.delete('gh_token');
+      const nextHash = hashParams.toString();
+      url.hash = nextHash ? ('#' + nextHash) : '';
+    }
+
+    history.replaceState(null, '', url.toString());
+    return token;
+  }
+
+  function parseSemver(tagName){
+    const raw = tagName.startsWith('v') ? tagName.slice(1) : tagName;
+    const m = raw.match(/^(\d+)\.(\d+)\.(\d+)$/);
+    if (!m) return null;
+    return {
+      major: Number(m[1]),
+      minor: Number(m[2]),
+      patch: Number(m[3])
+    };
+  }
+
+  function compareSemver(a, b){
+    if (a.major !== b.major) return a.major - b.major;
+    if (a.minor !== b.minor) return a.minor - b.minor;
+    return a.patch - b.patch;
+  }
+
+  function pickLatestSemverTag(tags){
+    const parsed = tags
+      .map((t) => ({ name: t && t.name ? t.name : '', ver: parseSemver(t && t.name ? t.name : '') }))
+      .filter((t) => t.ver !== null);
+    if (!parsed.length) return '';
+    parsed.sort((a, b) => compareSemver(b.ver, a.ver));
+    return parsed[0].name;
+  }
+
   async function updateVersionLabel(){
     if (!versionTagEl) return;
     try {
       const response = await fetch(REPO_API_URL, {
-        headers: { Accept: 'application/vnd.github+json' }
+        headers: { Accept: 'application/vnd.github+json' },
+        cache: 'no-store'
       });
       if (!response.ok) throw new Error('Unable to load tags');
       const tags = await response.json();
-      const latestTag = Array.isArray(tags) && tags.length ? tags[0].name : '';
+      const latestTag = Array.isArray(tags) && tags.length ? (pickLatestSemverTag(tags) || tags[0].name) : '';
       latestTagName = latestTag || '';
-      versionTagEl.textContent = latestTag ? (latestTag.startsWith('v') ? latestTag : 'v' + latestTag) : 'v∞';
+      versionTagEl.textContent = latestTag ? (latestTag.startsWith('v') ? latestTag : 'v' + latestTag) : FALLBACK_VERSION_TAG;
     } catch (err) {
       latestTagName = '';
-      versionTagEl.textContent = 'v∞';
+      versionTagEl.textContent = FALLBACK_VERSION_TAG;
     }
   }
 
@@ -388,7 +447,11 @@
     { label: "110", type: "command", text: "GOTO 000" }
   ];
 
-  let forkEntryText = '';
+  let forkEntryText = getParamFromSearchOrHash('entry') || '';
+  const bootstrappedToken = bootstrapTokenFromLocation();
+  if (bootstrappedToken){
+    sessionStorage.setItem('recursive_manifesto_gh_pat', bootstrappedToken);
+  }
 
   function getRuntimeTenets(){
     const cmdIndex = BASE_TENETS.findIndex((t) => t.type === 'command');
@@ -513,7 +576,7 @@
       const forkRow = slotEl.querySelector('.fork-row');
       const forkBtn = slotEl.querySelector('.fork-btn');
       slotEl._input = input;
-      input.value = forkEntryText;
+      input.value = '';
       forkRow.classList.toggle('visible', forkEntryText.trim().length > 0);
       input.addEventListener('input', () => {
         const prevHasEntry = forkEntryText.trim().length > 0;
@@ -540,6 +603,9 @@
     const t = runtimeTenets[index];
     const speed = 26;
     if (t.type === 'prose'){
+      const el = slotEl.querySelector('.tenet');
+      if (el) slotEl._typeInterval = typeText(el, t.text, speed);
+    } else if (t.type === 'forked'){
       const el = slotEl.querySelector('.tenet');
       if (el) slotEl._typeInterval = typeText(el, t.text, speed);
     } else if (t.type === 'command'){
@@ -858,6 +924,20 @@
     return lines.join('\n');
   }
 
+  function buildManualForkPayload(entry){
+    return [
+      '105 ' + entry,
+      '',
+      'MANIFESTO.txt:',
+      'Insert above: 110 GOTO 000',
+      '105 ' + entry,
+      '',
+      'README.md:',
+      'Insert above: - 110 GOTO 000',
+      '- 105 ' + entry
+    ].join('\n');
+  }
+
   function toBase64Utf8(value){
     const bytes = new TextEncoder().encode(value);
     let binary = '';
@@ -965,9 +1045,18 @@
     }
 
     const existing = sessionStorage.getItem('recursive_manifesto_gh_pat') || '';
-    const token = window.prompt('GitHub token with repo permissions (used in this tab only):', existing);
-    if (!token) return;
-    sessionStorage.setItem('recursive_manifesto_gh_pat', token);
+    let token = existing.trim();
+    if (!token){
+      const manualPayload = buildManualForkPayload(entry);
+      try {
+        await navigator.clipboard.writeText(manualPayload);
+      } catch (err) {
+        legacyCopy(manualPayload);
+      }
+      window.open(FORK_URL, '_blank', 'noopener');
+      alert('Fork opened. Line 105 content has been copied so you can paste it into MANIFESTO.txt and README.md in your fork.');
+      return;
+    }
 
     const originalText = forkBtn.textContent;
     forkBtn.disabled = true;
