@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>The Recursive Manifesto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0c0c0e;
+    --bone: #e9e4d6;
+    --bone-dim: #6f6b60;
+    --line: #2a2a26;
+    --glitch-magenta: #ff2e63;
+    --glitch-cyan: #08f7fe;
+    --gutter: clamp(20px, 7vw, 72px);
+    --row-gap: clamp(0.8em, 2vw, 1.4em);
+    --text-size: 1.3vw;
+    --font-label: 'Press Start 2P', ui-monospace, 'Courier New', monospace;
+    --font-prose: 'Press Start 2P', ui-monospace, 'Courier New', monospace;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html, body{
+    height: 100%;
+    margin: 0;
+    background: var(--bg);
+    color: var(--bone);
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
+
+  body{ font-family: var(--font-prose); font-weight: bold; }
+
+  body::before{
+    content:"";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 5;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,0.025) 0px,
+      rgba(255,255,255,0.025) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  }
+
+  .wordmark{
+    position: fixed;
+    top: clamp(14px, 3vw, 28px);
+    left: var(--gutter);
+    font-family: var(--font-label);
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    color: var(--bone-dim);
+    z-index: 4;
+    user-select: none;
+  }
+  .wordmark span{ color: var(--bone); }
+
+  .copy-btn{
+    position: fixed;
+    top: clamp(14px, 3vw, 28px);
+    right: var(--gutter);
+    z-index: 4;
+    font-family: var(--font-label);
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    color: var(--bone-dim);
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+  .copy-btn:hover{ color: var(--bone); }
+  .copy-btn:focus-visible{ outline: 2px solid var(--glitch-cyan); outline-offset: 3px; }
+
+  .stage{
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+  }
+
+  .slide{
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: calc(50vh - (var(--text-size) * 1.35 / 2)) 8vw 6vh var(--gutter);
+    text-align: left;
+    pointer-events: none;
+  }
+  .slide .interactive-wrap{ pointer-events: auto; }
+  .slide .tenet.command{ pointer-events: auto; }
+  .slide--inactive, .slide--inactive *{ pointer-events: none !important; }
+
+  .slide-inner{
+    font-size: var(--text-size);
+    transform-origin: calc(2ch + var(--row-gap) / 2) center;
+    will-change: transform, opacity;
+  }
+
+  .tenet-row{
+    display: flex;
+    align-items: flex-start;
+    gap: var(--row-gap);
+  }
+
+  .index-label{
+    flex: none;
+    font-family: var(--font-prose);
+    font-size: var(--text-size);
+    line-height: 1.35;
+    color: var(--bone);
+  }
+  .tenet{
+    font-family: var(--font-prose);
+    font-size: var(--text-size);
+    line-height: 1.35;
+    max-width: min(80ch, 78vw);
+    color: var(--bone);
+  }
+  .tenet.command{
+    font-family: var(--font-prose);
+    font-size: var(--text-size);
+    line-height: 1.35;
+    cursor: pointer;
+    padding: 0.6em 0.9em;
+    color: var(--bone);
+    background: transparent;
+    border: none;
+    margin-top: -0.6em;
+    display: inline-block;
+  }
+  .tenet.command:hover{ background: var(--bone); color: var(--bg); }
+  .tenet.command:active{ transform: scale(.97); }
+
+  /* --- corrupted line 07 --- */
+  .glitch-wrap{ white-space: nowrap; }
+  .glitch{
+    position: relative;
+    display: inline-block;
+    white-space: nowrap;
+    line-height: 1.35;
+    font-family: var(--font-prose);
+    font-size: var(--text-size);
+    color: var(--bone);
+    opacity: 0.9;
+  }
+  .glitch::before, .glitch::after{
+    content: attr(data-text);
+    position: absolute;
+    left: 0; top: 0;
+    white-space: nowrap;
+  }
+  .glitch::before{
+    color: var(--glitch-magenta);
+    mix-blend-mode: screen;
+    animation: glitchShift 2.6s infinite steps(2);
+    opacity: 0.75;
+  }
+  .glitch::after{
+    color: var(--glitch-cyan);
+    mix-blend-mode: screen;
+    animation: glitchShift 3.1s infinite steps(2) reverse;
+    opacity: 0.75;
+  }
+  @keyframes glitchShift{
+    0%{ transform: translate(-2px,0); }
+    25%{ transform: translate(2px,1px); }
+    50%{ transform: translate(-1px,-1px); }
+    75%{ transform: translate(1px,0); }
+    100%{ transform: translate(-2px,0); }
+  }
+  .sr-only{
+    position: absolute; width: 1px; height: 1px;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap;
+  }
+
+  /* --- interactive line 10 --- */
+  .interactive-wrap{
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .tenet-input{
+    width: min(80ch, 78vw);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--line);
+    color: var(--bone);
+    font-family: var(--font-prose);
+    font-size: var(--text-size);
+    font-weight: bold;
+    line-height: 1.35;
+    text-align: left;
+    padding: 0.2em 0.1em 0.35em;
+    margin-top: -0.2em;
+    outline: none;
+    caret-color: var(--bone);
+    transition: border-color 240ms ease;
+  }
+  .tenet-input::placeholder{ color: var(--bone-dim); opacity: 1; }
+  .tenet-input:focus{ border-bottom-color: var(--bone-dim); }
+
+  .fork-row{
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: clamp(20px, 4vh, 32px);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 320ms ease, transform 320ms ease;
+    pointer-events: none;
+  }
+  .fork-row.visible{
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  .fork-btn{
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 0.6em;
+    font-family: var(--font-prose);
+    font-size: var(--text-size);
+    font-weight: bold;
+    line-height: 1.4;
+    color: var(--bone);
+    background: transparent;
+    border: none;
+    padding: 0.6em 0.9em;
+    cursor: pointer;
+  }
+  .fork-btn svg{ flex: none; margin-top: 0.3em; color: inherit; }
+  .fork-btn:hover{ background: var(--bone); color: var(--bg); }
+  .fork-caption{
+    font-family: var(--font-prose);
+    font-size: 15px;
+    color: var(--bone-dim);
+    margin: 0;
+  }
+
+  /* --- dot navigation --- */
+  .dots{
+    position: fixed;
+    left: 50%;
+    bottom: clamp(20px, 5vh, 40px);
+    transform: translateX(-50%);
+    display: flex;
+    gap: clamp(10px, 1.6vw, 16px);
+    z-index: 4;
+  }
+  .dot{
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1.5px solid var(--bone-dim);
+    padding: 0;
+    cursor: pointer;
+  }
+  .dot:hover{ border-color: var(--bone); }
+  .dot-spacer{
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border: 1.5px solid transparent;
+    pointer-events: none;
+  }
+  .dot[aria-selected="true"]{
+    background: var(--bone);
+    border-color: var(--bone);
+  }
+  .dot:focus-visible{ outline: 2px solid var(--glitch-cyan); outline-offset: 3px; }
+
+  .nav-hint{
+    position: fixed;
+    bottom: clamp(4px, 1.4vh, 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-label);
+    font-size: 8px;
+    letter-spacing: 0.14em;
+    color: var(--bone-dim);
+    opacity: 0.6;
+    z-index: 4;
+  }
+  @media (max-width: 480px){ .nav-hint{ display: none; } }
+
+  #readout-overlay{
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    padding: 8vh 8vw 8vh var(--gutter);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 400ms ease;
+  }
+  #readout-overlay.visible{ opacity: 1; pointer-events: auto; }
+  #readout-content{
+    width: 100%;
+    max-height: 84vh;
+    overflow-y: auto;
+    font-family: var(--font-prose);
+    font-weight: bold;
+    color: var(--bone);
+    font-size: clamp(0.8rem, 1.6vw, 1.05rem);
+    line-height: 1.7;
+  }
+  .readout-line{ white-space: pre-wrap; margin-bottom: 0.35em; }
+</style>
+</head>
+<body>
+
+  <div class="wordmark">THE <span>RECURSIVE</span> MANIFESTO — v∞</div>
+  <button class="copy-btn" type="button" aria-label="Copy manifesto text to clipboard">COPY</button>
+
+  <div class="stage" id="stage"></div>
+
+  <div class="dots" id="dots" role="tablist" aria-label="Manifesto tenets"></div>
+  <div class="nav-hint">SCROLL TO ADVANCE · GOTO 00 TO LOOP</div>
+
+  <div id="readout-overlay">
+    <div id="readout-content"></div>
+  </div>
+
+<script>
+  // ---- EDIT THIS: the GitHub repo that hosts this page ----
+  const REPO_URL = "https://github.com/x86ed/recursive-manifesto";
+  const FORK_URL = REPO_URL + "/fork";
+  // -----------------------------------------------------------
+
+  const TENETS = [
+    { label: "00", type: "prose",   text: "Process cannot exist without goals." },
+    { label: "01", type: "prose",   text: "Build only what's unique, steal the rest." },
+    { label: "02", type: "prose",   text: "There is no worthy form without restraint." },
+    { label: "03", type: "prose",   text: "If it cannot be observed it cannot be controlled." },
+    { label: "04", type: "prose",   text: "What cannot bend, breaks. What cannot hold, hollows the whole.", long: true },
+    { label: "05", type: "prose",   text: "There are no observers, only participants." },
+    { label: "06", type: "prose",   text: "There is no improvement without corruption." },
+    { label: "07", type: "corrupt" },
+    { label: "08", type: "prose",   text: "Complacency causes casualty." },
+    { label: "09", type: "prose",   text: "Nothing exists in isolation." },
+    { label: "10", type: "interactive", text: "Complete works are dead works." },
+    { label: "11", type: "command", text: "GOTO 00" }
+  ];
+
+  const TOTAL = TENETS.length;
+  const EASE = 0.18;
+  const IDLE_MS = 140;
+  const WHEEL_SENSITIVITY = 1 / 320;
+  const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const GLITCH_POOL = "0123456789<>/\\|=+*#@%&^~?!_-.,;:[]{}".split('');
+  const GLITCH_WORDS = ["NULL","VOID","0x07","ERROR","MISSING","UNDEFINED","404","CORRUPT"];
+
+  function randomGlitchString(len){
+    let out = '';
+    for(let i=0;i<len;i++) out += GLITCH_POOL[Math.floor(Math.random()*GLITCH_POOL.length)];
+    return out;
+  }
+
+  function floorMod(n, m){ return ((n % m) + m) % m; }
+
+  const stage = document.getElementById('stage');
+  const dotsEl = document.getElementById('dots');
+
+  // --- build the two persistent slots ---
+  const slotA = document.createElement('div');
+  const slotB = document.createElement('div');
+  slotA.className = 'slide';
+  slotB.className = 'slide';
+  slotA.dataset.floor = '';
+  slotB.dataset.floor = '';
+  stage.appendChild(slotA);
+  stage.appendChild(slotB);
+
+  function buildSlideContent(index){
+    const t = TENETS[index];
+    const wrap = document.createElement('div');
+    wrap.className = 'slide-inner';
+
+    if (t.type === 'corrupt'){
+      wrap.innerHTML =
+        '<span class="glitch-wrap"><span class="glitch" data-text=""></span>' +
+        '<span class="sr-only">Tenet 07 could not be recovered.</span></span>';
+    } else if (t.type === 'interactive'){
+      wrap.innerHTML =
+        '<div class="interactive-wrap">' +
+          '<div class="tenet-row tenet-row--interactive">' +
+            '<span class="index-label">' + t.label + '</span>' +
+            '<input class="tenet-input" type="text" placeholder="" autocomplete="off" spellcheck="false" aria-label="Rewrite tenet 10">' +
+          '</div>' +
+          '<div class="fork-row">' +
+            '<button class="fork-btn" type="button">' +
+              '<svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">' +
+                '<rect x="2" y="1" width="3" height="3" fill="currentColor"/>' +
+                '<rect x="11" y="1" width="3" height="3" fill="currentColor"/>' +
+                '<rect x="6.5" y="11" width="3" height="3" fill="currentColor"/>' +
+                '<rect x="3" y="4" width="1" height="4" fill="currentColor"/>' +
+                '<rect x="12" y="4" width="1" height="4" fill="currentColor"/>' +
+                '<rect x="3" y="7" width="10" height="1" fill="currentColor"/>' +
+                '<rect x="7.5" y="8" width="1" height="3" fill="currentColor"/>' +
+              '</svg>' +
+              'Fork this manifesto' +
+            '</button>' +
+            '<p class="fork-caption">Opens a fork of this repo on GitHub.</p>' +
+          '</div>' +
+        '</div>';
+    } else if (t.type === 'command'){
+      wrap.innerHTML =
+        '<div class="tenet-row">' +
+          '<span class="index-label">' + t.label + '</span>' +
+          '<span class="tenet command" aria-label="' + t.text + '"></span>' +
+        '</div>';
+    } else {
+      wrap.innerHTML =
+        '<div class="tenet-row">' +
+          '<span class="index-label">' + t.label + '</span>' +
+          '<span class="tenet" aria-label="' + t.text + '"></span>' +
+        '</div>';
+    }
+    return wrap;
+  }
+
+  function wireSlideBehavior(slotEl, index){
+    const t = TENETS[index];
+
+    if (t.type === 'corrupt'){
+      const glitchEl = slotEl.querySelector('.glitch');
+      let tick = 0;
+      const len = 80;
+      const id = setInterval(() => {
+        tick++;
+        let val;
+        if (tick % 14 === 0){
+          const w = GLITCH_WORDS[Math.floor(Math.random()*GLITCH_WORDS.length)];
+          const pad = Math.max(0, len - w.length);
+          const left = Math.floor(pad/2), right = pad - left;
+          val = randomGlitchString(left) + w + randomGlitchString(right);
+        } else {
+          val = randomGlitchString(len);
+        }
+        glitchEl.dataset.text = val;
+        glitchEl.textContent = val;
+      }, 90);
+      slotEl._interval = id;
+    }
+
+    if (t.type === 'interactive'){
+      const input = slotEl.querySelector('.tenet-input');
+      const forkRow = slotEl.querySelector('.fork-row');
+      const forkBtn = slotEl.querySelector('.fork-btn');
+      slotEl._input = input;
+      input.addEventListener('input', () => {
+        forkRow.classList.toggle('visible', input.value.trim().length > 0);
+      });
+      forkBtn.addEventListener('click', () => {
+        window.open(FORK_URL, '_blank', 'noopener');
+      });
+    }
+
+    if (t.type === 'command'){
+      const el = slotEl.querySelector('.tenet.command');
+      el.addEventListener('click', () => playReadout());
+    }
+  }
+
+  function startTypeIn(slotEl, index){
+    const t = TENETS[index];
+    const speed = 26;
+    if (t.type === 'prose'){
+      const el = slotEl.querySelector('.tenet');
+      if (el) slotEl._typeInterval = typeText(el, t.text, speed);
+    } else if (t.type === 'command'){
+      const el = slotEl.querySelector('.tenet.command');
+      if (el) slotEl._typeInterval = typeText(el, t.text, speed);
+    } else if (t.type === 'interactive'){
+      const input = slotEl.querySelector('.tenet-input');
+      if (input) slotEl._typeInterval = typePlaceholder(input, t.text, speed);
+    }
+  }
+
+  function typeText(el, fullText, speed){
+    el.textContent = '';
+    let i = 0;
+    const id = setInterval(() => {
+      i++;
+      el.textContent = fullText.slice(0, i);
+      if (i >= fullText.length) clearInterval(id);
+    }, speed);
+    return id;
+  }
+
+  function typePlaceholder(inputEl, fullText, speed){
+    inputEl.placeholder = '';
+    let i = 0;
+    const id = setInterval(() => {
+      i++;
+      inputEl.placeholder = fullText.slice(0, i);
+      if (i >= fullText.length) clearInterval(id);
+    }, speed);
+    return id;
+  }
+
+  function mountSlot(slotEl, floorValue){
+    if (slotEl._interval){ clearInterval(slotEl._interval); slotEl._interval = null; }
+    if (slotEl._typeInterval){ clearInterval(slotEl._typeInterval); slotEl._typeInterval = null; }
+    slotEl._input = null;
+    slotEl.innerHTML = '';
+    const index = floorMod(floorValue, TOTAL);
+    const inner = buildSlideContent(index);
+    slotEl.appendChild(inner);
+    slotEl.dataset.floor = String(floorValue);
+    slotEl._inner = inner;
+    wireSlideBehavior(slotEl, index);
+  }
+
+  const OUT_PEAK = 900;
+  const IN_PEAK = 900;
+
+  function applyTransform(el, d){
+    d = Math.max(-1, Math.min(1, d));
+    let scale, visible;
+    if (d >= 0){
+      scale = Math.pow(OUT_PEAK, d);
+      visible = d < 0.5;
+    } else {
+      const p = 1 + d;
+      scale = Math.pow(IN_PEAK, p - 1);
+      visible = p >= 0.5;
+    }
+    el.style.transform = 'scale(' + scale.toFixed(4) + ')';
+    el.style.opacity = visible ? '1' : '0';
+  }
+
+  // --- dots ---
+  function buildDots(){
+    dotsEl.innerHTML = '';
+    TENETS.forEach((t, i) => {
+      if (t.type === 'corrupt'){
+        const spacer = document.createElement('span');
+        spacer.className = 'dot-spacer';
+        spacer.setAttribute('aria-hidden', 'true');
+        dotsEl.appendChild(spacer);
+        return;
+      }
+      const b = document.createElement('button');
+      b.className = 'dot';
+      b.dataset.index = i;
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-label', 'Tenet ' + t.label);
+      b.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+      b.addEventListener('click', () => goTo(i));
+      dotsEl.appendChild(b);
+    });
+  }
+  let lastActiveIndex = 0;
+  function updateDots(activeIndex){
+    if (activeIndex === lastActiveIndex) return;
+    lastActiveIndex = activeIndex;
+    [...dotsEl.children].forEach((b) => {
+      b.setAttribute('aria-selected', Number(b.dataset.index) === activeIndex ? 'true' : 'false');
+    });
+  }
+
+  // --- continuous position engine ---
+  let targetPos = 0;
+  let renderedPos = 0;
+  let lastInputTime = 0;
+
+  function nearestEquivalent(idx, ref){
+    const k = Math.round((ref - idx) / TOTAL);
+    return idx + k * TOTAL;
+  }
+  function goTo(index){
+    if (readoutActive) return;
+    targetPos = nearestEquivalent(index, targetPos);
+    lastInputTime = performance.now();
+  }
+
+  let lastFocusedFloor = null;
+
+  function tick(){
+    const now = performance.now();
+    const idle = (now - lastInputTime) > IDLE_MS;
+    if (idle) targetPos = Math.round(targetPos);
+
+    if (REDUCED_MOTION){
+      renderedPos = targetPos;
+    } else {
+      renderedPos += (targetPos - renderedPos) * EASE;
+      if (Math.abs(targetPos - renderedPos) < 0.0004) renderedPos = targetPos;
+    }
+
+    const f = Math.floor(renderedPos);
+    if (slotA.dataset.floor !== String(f)) mountSlot(slotA, f);
+    if (slotB.dataset.floor !== String(f + 1)) mountSlot(slotB, f + 1);
+
+    applyTransform(slotA._inner, renderedPos - f);
+    applyTransform(slotB._inner, renderedPos - (f + 1));
+
+    const activeFloor = Math.round(renderedPos);
+    let activeSlot;
+    if (Number(slotA.dataset.floor) === activeFloor){
+      slotA.classList.remove('slide--inactive');
+      slotB.classList.add('slide--inactive');
+      activeSlot = slotA;
+    } else {
+      slotB.classList.remove('slide--inactive');
+      slotA.classList.add('slide--inactive');
+      activeSlot = slotB;
+    }
+
+    if (renderedPos === targetPos && Number.isInteger(targetPos) && targetPos !== lastFocusedFloor){
+      lastFocusedFloor = targetPos;
+      startTypeIn(activeSlot, floorMod(targetPos, TOTAL));
+      if (activeSlot._input) activeSlot._input.focus();
+    }
+
+    updateDots(floorMod(Math.round(renderedPos), TOTAL));
+
+    requestAnimationFrame(tick);
+  }
+
+  // --- input: wheel ---
+  let readoutActive = false;
+  window.addEventListener('wheel', (e) => {
+    if (readoutActive) return;
+    e.preventDefault();
+    targetPos += e.deltaY * WHEEL_SENSITIVITY;
+    lastInputTime = performance.now();
+  }, { passive: false });
+
+  // --- input: keyboard ---
+  document.addEventListener('keydown', (e) => {
+    if (readoutActive) return;
+    if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' '){
+      e.preventDefault();
+      targetPos += 1;
+      lastInputTime = performance.now();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp'){
+      e.preventDefault();
+      targetPos -= 1;
+      lastInputTime = performance.now();
+    }
+  });
+
+  // --- input: touch drag ---
+  let dragging = false, dragStartY = 0, dragStartPos = 0;
+  stage.addEventListener('touchstart', (e) => {
+    if (readoutActive) return;
+    if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+    dragging = true;
+    dragStartY = e.touches[0].clientY;
+    dragStartPos = targetPos;
+  }, { passive: true });
+  stage.addEventListener('touchmove', (e) => {
+    if (readoutActive || !dragging) return;
+    const dy = dragStartY - e.touches[0].clientY;
+    targetPos = dragStartPos + dy / (window.innerHeight * 0.6);
+    lastInputTime = performance.now();
+  }, { passive: true });
+  stage.addEventListener('touchend', () => { dragging = false; }, { passive: true });
+
+  // --- manifesto readout, triggered by GOTO 00 ---
+  const readoutOverlay = document.getElementById('readout-overlay');
+  const readoutContent = document.getElementById('readout-content');
+
+  function wait(ms){
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  function typeReadoutLine(text, speed){
+    return new Promise((resolve) => {
+      const lineEl = document.createElement('div');
+      lineEl.className = 'readout-line';
+      readoutContent.appendChild(lineEl);
+      let i = 0;
+      const id = setInterval(() => {
+        i++;
+        lineEl.textContent = text.slice(0, i);
+        readoutContent.scrollTop = readoutContent.scrollHeight;
+        if (i >= text.length){
+          clearInterval(id);
+          resolve();
+        }
+      }, speed);
+    });
+  }
+
+  async function playReadout(){
+    if (readoutActive) return;
+    readoutActive = true;
+    readoutContent.innerHTML = '';
+    readoutOverlay.classList.add('visible');
+
+    for (let i = 0; i < TOTAL; i++){
+      const t = TENETS[i];
+      const line = t.type === 'corrupt' ? '\u00A0' : (t.label + '  ' + t.text);
+      await typeReadoutLine(line, 16);
+      await wait(160);
+    }
+
+    await wait(800);
+    readoutOverlay.classList.remove('visible');
+    await wait(400);
+    readoutActive = false;
+    goTo(0);
+  }
+
+  // --- copy manifesto text ---
+  function buildManifestoText(){
+    return TENETS.map((t) => t.type === 'corrupt' ? '' : (t.label + '  ' + t.text)).join('\n');
+  }
+
+  const copyBtn = document.querySelector('.copy-btn');
+  function legacyCopy(text){
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+  }
+
+  copyBtn.addEventListener('click', async () => {
+    const text = buildManifestoText();
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(text);
+      ok = true;
+    } catch (err) {
+      ok = legacyCopy(text);
+    }
+    copyBtn.textContent = ok ? 'COPIED' : 'ERROR';
+    setTimeout(() => { copyBtn.textContent = 'COPY'; }, 1500);
+  });
+
+  buildDots();
+  mountSlot(slotA, 0);
+  mountSlot(slotB, 1);
+  requestAnimationFrame(tick);
+</script>
+</body>
+</html>
