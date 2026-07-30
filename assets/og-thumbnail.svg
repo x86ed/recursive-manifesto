@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">The Recursive Manifesto</title>
+  <desc id="desc">A philosophy of systems, recursion, and engineering restraint.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#060607"/>
+      <stop offset="100%" stop-color="#121216"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.2" cy="0.2" r="1">
+      <stop offset="0%" stop-color="#1f1f2a" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+
+  <g fill="none" stroke="#d9d9dd" opacity="0.25">
+    <circle cx="900" cy="315" r="44"/>
+    <circle cx="900" cy="315" r="88"/>
+    <circle cx="900" cy="315" r="132"/>
+    <circle cx="900" cy="315" r="176"/>
+    <circle cx="900" cy="315" r="220"/>
+  </g>
+
+  <text x="88" y="190" fill="#f4f4f5" font-family="'Courier New', monospace" font-size="78" font-weight="700" letter-spacing="5">THE</text>
+  <text x="88" y="285" fill="#f4f4f5" font-family="'Courier New', monospace" font-size="78" font-weight="700" letter-spacing="5">RECURSIVE</text>
+  <text x="88" y="380" fill="#f4f4f5" font-family="'Courier New', monospace" font-size="78" font-weight="700" letter-spacing="5">MANIFESTO</text>
+
+  <line x1="90" y1="430" x2="210" y2="430" stroke="#b3b3ba" stroke-width="5"/>
+  <text x="88" y="495" fill="#b8b8bf" font-family="'Courier New', monospace" font-size="34" letter-spacing="1.5">A philosophy of systems, recursion, and engineering restraint</text>
+  <text x="88" y="560" fill="#8c8c94" font-family="'Courier New', monospace" font-size="28" letter-spacing="1.5">x86ed.github.io/recursive-manifesto</text>
+</svg>
