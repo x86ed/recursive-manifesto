@@ -218,19 +218,13 @@
     top: 100%;
     left: 0;
     margin-top: clamp(20px, 4vh, 32px);
-    display: flex;
+    display: none;
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
-    opacity: 0;
-    transform: translateY(10px);
-    transition: opacity 320ms ease, transform 320ms ease;
-    pointer-events: none;
   }
   .fork-row.visible{
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
+    display: flex;
   }
   .fork-btn{
     display: inline-flex;
@@ -336,7 +330,7 @@
   <div class="stage" id="stage"></div>
 
   <div class="dots" id="dots" role="navigation" aria-label="Manifesto tenets"></div>
-  <div class="nav-hint">SCROLL TO ADVANCE · GOTO 000 TO LOOP</div>
+  <div class="nav-hint">scroll or use arrow keys ◀ ▶ to advance</div>
 
   <div id="readout-overlay" role="dialog" aria-modal="true" aria-label="Manifesto readout" tabindex="-1">
     <div id="readout-content"></div>
@@ -1031,15 +1025,15 @@
     forkBtn.textContent = 'Copying...';
 
     try {
-      const manifestContent = buildManifestoTxtForFork(entry);
+      const tenetLine = '105 ' + entry;
       try {
-        await navigator.clipboard.writeText(manifestContent);
+        await navigator.clipboard.writeText(tenetLine);
       } catch (err) {
-        legacyCopy(manifestContent);
+        legacyCopy(tenetLine);
       }
       forkBtn.textContent = 'Opening fork...';
       window.open(buildForkUrl(), '_blank', 'noopener');
-      alert('Fork opened. The full updated MANIFESTO.txt has been copied to your clipboard. Set repository description to your tenet, then run the action to stamp line 105.');
+      alert('Fork opened. The single 105 tenet line has been copied to your clipboard. Set repository description to your tenet, then run the action to stamp line 105.');
     } finally {
       forkBtn.disabled = false;
       forkBtn.textContent = originalText;
