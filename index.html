@@ -347,6 +347,7 @@
   const REPO_URL = "https://github.com/x86ed/recursive-manifesto";
   const REPO_API_URL = REPO_URL.replace('https://github.com/', 'https://api.github.com/repos/') + '/tags';
   const FORK_URL = REPO_URL + "/fork";
+  const FORK_DESCRIPTION_SEED = 'paste your tenet here';
   const FALLBACK_VERSION_TAG = 'v0.1.0';
   // -----------------------------------------------------------
 
@@ -367,25 +368,10 @@
     return hashParams.get(name) || '';
   }
 
-  function bootstrapTokenFromLocation(){
-    const token = getParamFromSearchOrHash('gh_pat') || getParamFromSearchOrHash('gh_token');
-    if (!token) return '';
-
-    const url = new URL(window.location.href);
-    url.searchParams.delete('gh_pat');
-    url.searchParams.delete('gh_token');
-
-    const hash = url.hash.startsWith('#') ? url.hash.slice(1) : url.hash;
-    if (hash){
-      const hashParams = new URLSearchParams(hash);
-      hashParams.delete('gh_pat');
-      hashParams.delete('gh_token');
-      const nextHash = hashParams.toString();
-      url.hash = nextHash ? ('#' + nextHash) : '';
-    }
-
-    history.replaceState(null, '', url.toString());
-    return token;
+  function buildForkUrl(){
+    const url = new URL(FORK_URL);
+    url.searchParams.set('description', FORK_DESCRIPTION_SEED);
+    return url.toString();
   }
 
   function parseSemver(tagName){
@@ -448,10 +434,6 @@
   ];
 
   let forkEntryText = getParamFromSearchOrHash('entry') || '';
-  const bootstrappedToken = bootstrapTokenFromLocation();
-  if (bootstrappedToken){
-    sessionStorage.setItem('recursive_manifesto_gh_pat', bootstrappedToken);
-  }
 
   function getRuntimeTenets(){
     const cmdIndex = BASE_TENETS.findIndex((t) => t.type === 'command');
@@ -576,7 +558,7 @@
       const forkRow = slotEl.querySelector('.fork-row');
       const forkBtn = slotEl.querySelector('.fork-btn');
       slotEl._input = input;
-      input.value = '';
+      input.value = forkEntryText;
       forkRow.classList.toggle('visible', forkEntryText.trim().length > 0);
       input.addEventListener('input', () => {
         const prevHasEntry = forkEntryText.trim().length > 0;
@@ -1040,61 +1022,27 @@
       return;
     }
     if (!REPO_OWNER || !REPO_NAME){
-      window.open(FORK_URL, '_blank', 'noopener');
-      return;
-    }
-
-    const existing = sessionStorage.getItem('recursive_manifesto_gh_pat') || '';
-    let token = existing.trim();
-    if (!token){
-      const manualPayload = buildManualForkPayload(entry);
-      try {
-        await navigator.clipboard.writeText(manualPayload);
-      } catch (err) {
-        legacyCopy(manualPayload);
-      }
-      window.open(FORK_URL, '_blank', 'noopener');
-      alert('Fork opened. Line 105 content has been copied so you can paste it into MANIFESTO.txt and README.md in your fork.');
+      window.open(buildForkUrl(), '_blank', 'noopener');
       return;
     }
 
     const originalText = forkBtn.textContent;
     forkBtn.disabled = true;
-    forkBtn.textContent = 'Forking...';
+    forkBtn.textContent = 'Copying...';
 
     try {
-      const me = await githubRequest('/user', { method: 'GET' }, token);
-      const login = me && me.login ? me.login : '';
-      if (!login) throw new Error('Could not resolve your GitHub username.');
-
-      const forkResult = await githubRequest('/repos/' + REPO_OWNER + '/' + REPO_NAME + '/forks', {
-        method: 'POST',
-        body: { default_branch_only: true }
-      }, token);
-
-      const fullName = (forkResult && forkResult.full_name) ? forkResult.full_name : (login + '/' + REPO_NAME);
-      forkBtn.textContent = 'Stamping 105...';
-      const forkRepo = await waitForForkRepo(fullName, token);
-
       const manifestContent = buildManifestoTxtForFork(entry);
-      const readmeContent = buildReadmeForFork(entry);
-
-      await upsertRepoFile(fullName, 'MANIFESTO.txt', manifestContent, token, 'fork: add 105 line from user input');
-      await upsertRepoFile(fullName, 'README.md', readmeContent, token, 'docs: include 105 fork line');
-
-      forkBtn.textContent = 'Tagging...';
-      const nextTag = bumpMinorTag(latestTagName);
-      await createMinorTag(fullName, nextTag, token);
-
-      forkBtn.textContent = 'Fork ready';
-      window.open('https://github.com/' + (forkRepo.full_name || fullName), '_blank', 'noopener');
-    } catch (err) {
-      forkBtn.textContent = 'Retry fork';
-      const msg = err && err.message ? err.message : 'Fork failed.';
-      alert(msg);
+      try {
+        await navigator.clipboard.writeText(manifestContent);
+      } catch (err) {
+        legacyCopy(manifestContent);
+      }
+      forkBtn.textContent = 'Opening fork...';
+      window.open(buildForkUrl(), '_blank', 'noopener');
+      alert('Fork opened. The full updated MANIFESTO.txt has been copied to your clipboard. Set repository description to your tenet, then run the action to stamp line 105.');
     } finally {
       forkBtn.disabled = false;
-      if (forkBtn.textContent !== 'Fork ready') forkBtn.textContent = originalText;
+      forkBtn.textContent = originalText;
     }
   }
 

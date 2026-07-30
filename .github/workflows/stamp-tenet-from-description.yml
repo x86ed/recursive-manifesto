@@ -1,0 +1,128 @@
+name: Stamp Tenet From Description
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  stamp:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read repository description
+        id: repo
+        uses: actions/github-script@v7
+        with:
+          result-encoding: string
+          script: |
+            const desc = (context.payload.repository?.description || '').trim();
+            return desc;
+
+      - name: Decide whether to stamp
+        id: decide
+        env:
+          TENET: ${{ steps.repo.outputs.result }}
+        run: |
+          tenet="$(printf '%s' "$TENET" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          if [ -z "$tenet" ] || [ "$tenet" = "paste your tenet here" ]; then
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            echo "tenet=" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            printf 'tenet=%s\n' "$tenet" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Stamp 105 in files
+        if: steps.decide.outputs.should_run == 'true'
+        env:
+          TENET: ${{ steps.decide.outputs.tenet }}
+        run: |
+          set -euo pipefail
+
+          manifesto_line="105 $TENET"
+          readme_line="- 105 $TENET"
+
+          upsert_line() {
+            file="$1"
+            prefix="$2"
+            before="$3"
+            line="$4"
+
+            awk -v prefix="$prefix" -v before="$before" -v line="$line" '
+              BEGIN { done=0 }
+              $0 ~ "^" prefix " " {
+                if (!done) {
+                  print line;
+                  done=1;
+                }
+                next;
+              }
+              $0 ~ "^" before "$" {
+                if (!done) {
+                  print line;
+                  done=1;
+                }
+                print;
+                next;
+              }
+              { print }
+              END {
+                if (!done) print line;
+              }
+            ' "$file" > "$file.tmp"
+
+            mv "$file.tmp" "$file"
+          }
+
+          upsert_line "MANIFESTO.txt" "105" "110 GOTO 000" "$manifesto_line"
+          upsert_line "README.md" "- 105" "- 110 GOTO 000" "$readme_line"
+
+      - name: Commit changes
+        id: commit
+        if: steps.decide.outputs.should_run == 'true'
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add MANIFESTO.txt README.md
+          git commit -m "chore: stamp 105 from repository description"
+          git push
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Bump minor tag
+        if: steps.commit.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          latest="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname | head -n 1)"
+          if [ -z "$latest" ]; then
+            latest="v0.0.0"
+          fi
+
+          version="${latest#v}"
+          IFS='.' read -r major minor patch <<< "$version"
+          next="v${major}.$((minor + 1)).0"
+
+          if git rev-parse "$next" >/dev/null 2>&1; then
+            echo "Tag $next already exists; skipping."
+            exit 0
+          fi
+
+          git tag "$next"
+          git push origin "$next"

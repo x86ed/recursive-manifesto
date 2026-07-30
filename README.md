@@ -17,5 +17,7 @@
 
 - Enter text on 100 and click Fork this manifesto.
 - The app inserts line 105 only when you enter text on 100; with no input, 105 does not exist.
-- During fork, the app uses the GitHub API to update MANIFESTO.txt and README.md in your new fork with your 105 line.
-- The app creates a new tag in your fork by bumping the upstream minor version (for example v0.1.0 -> v0.2.0).
+- Before opening GitHub fork, the app copies the full updated MANIFESTO.txt (including 105) to your clipboard.
+- The fork link includes a preseeded description query value: paste your tenet here.
+- After the repo exists, run the Stamp Tenet From Description action in Actions.
+- The action reads repository description, inserts line 105 into MANIFESTO.txt and README.md, commits, and bumps a minor tag (for example v0.1.0 -> v0.2.0).
