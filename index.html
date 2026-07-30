@@ -752,6 +752,7 @@
   }
 
   const copyBtn = document.querySelector('.copy-btn');
+  let copyResetTimer = null;
   function legacyCopy(text){
     const ta = document.createElement('textarea');
     ta.value = text;
@@ -777,7 +778,8 @@
       ok = legacyCopy(text);
     }
     copyBtn.textContent = ok ? 'COPIED' : 'ERROR';
-    setTimeout(() => { copyBtn.textContent = 'COPY'; }, 1500);
+    if (copyResetTimer) clearTimeout(copyResetTimer);
+    copyResetTimer = setTimeout(() => { copyBtn.textContent = 'COPY'; }, 1500);
   });
 
   buildDots();
