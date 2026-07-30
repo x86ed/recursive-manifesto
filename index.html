@@ -4,6 +4,57 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>The Recursive Manifesto</title>
+<meta name="description" content="000 Process cannot exist without goals. 010 Build only what's unique, steal the rest. 020 There is no worthy form without restraint. 030 If it cannot be observed it cannot be controlled. 040 What cannot bend, breaks. What cannot hold, hollows the whole. 050 There are no observers, only participants. 060 There is no improvement without corruption. 080 Complacency causes casualty. 090 Nothing exists in isolation. 100 Complete works are dead works. 110 GOTO 000.">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#0c0c0e">
+
+<link rel="canonical" href="https://x86ed.github.io/recursive-manifesto/">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Recursive Manifesto">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="The Recursive Manifesto">
+<meta property="og:description" content="000 Process cannot exist without goals. 010 Build only what's unique, steal the rest. 020 There is no worthy form without restraint. 030 If it cannot be observed it cannot be controlled. 040 What cannot bend, breaks. What cannot hold, hollows the whole. 050 There are no observers, only participants. 060 There is no improvement without corruption. 080 Complacency causes casualty. 090 Nothing exists in isolation. 100 Complete works are dead works. 110 GOTO 000.">
+<meta property="og:url" content="https://x86ed.github.io/recursive-manifesto/">
+<meta property="og:image" content="https://x86ed.github.io/recursive-manifesto/assets/og-thumbnail.png">
+<meta property="og:image:secure_url" content="https://x86ed.github.io/recursive-manifesto/assets/og-thumbnail.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The Recursive Manifesto">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The Recursive Manifesto">
+<meta name="twitter:description" content="A philosophy of systems, recursion, and engineering restraint.">
+<meta name="twitter:image" content="https://x86ed.github.io/recursive-manifesto/assets/og-thumbnail.png">
+<meta name="twitter:image:alt" content="The Recursive Manifesto">
+
+<meta name="application-name" content="The Recursive Manifesto">
+<meta name="apple-mobile-web-app-title" content="Recursive Manifesto">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<link rel="icon" href="assets/favicon-32x32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="assets/favicon-16x16.png" type="image/png" sizes="16x16">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png" sizes="180x180">
+<link rel="manifest" href="assets/site.webmanifest">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "The Recursive Manifesto",
+  "url": "https://x86ed.github.io/recursive-manifesto/",
+  "description": "A philosophy of systems, recursion, and engineering restraint.",
+  "about": "systems engineering and recursion",
+  "inLanguage": "en",
+  "mainEntity": {
+    "@type": "CreativeWork",
+    "name": "The Recursive Manifesto",
+    "text": "000 Process cannot exist without goals. 010 Build only what's unique, steal the rest. 020 There is no worthy form without restraint. 030 If it cannot be observed it cannot be controlled. 040 What cannot bend, breaks. What cannot hold, hollows the whole. 050 There are no observers, only participants. 060 There is no improvement without corruption. 080 Complacency causes casualty. 090 Nothing exists in isolation. 100 Complete works are dead works. 110 GOTO 000."
+  }
+}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -735,6 +786,8 @@
 
   let forkEntryText = getParamFromSearchOrHash('entry') || '';
 
+  const ogDescriptionMeta = document.querySelector('meta[property="og:description"]');
+
   function getRuntimeTenets(){
     const cmdIndex = BASE_TENETS.findIndex((t) => t.type === 'command');
     const out = BASE_TENETS.slice();
@@ -745,6 +798,18 @@
       else out.push(forkLine);
     }
     return out;
+  }
+
+  function buildOgDescriptionFromRuntimeTenets(){
+    return getRuntimeTenets()
+      .filter((t) => t.type !== 'corrupt')
+      .map((t) => t.label + ' ' + t.text)
+      .join(' ');
+  }
+
+  function syncOgDescriptionMeta(){
+    if (!ogDescriptionMeta) return;
+    ogDescriptionMeta.setAttribute('content', buildOgDescriptionFromRuntimeTenets());
   }
 
   function getTotal(){
@@ -865,6 +930,7 @@
         forkEntryText = input.value;
         const nextHasEntry = forkEntryText.trim().length > 0;
         forkRow.classList.toggle('visible', nextHasEntry);
+        syncOgDescriptionMeta();
         if (prevHasEntry !== nextHasEntry){
           syncRuntimeAfterTenetChange();
         }
@@ -1404,6 +1470,7 @@
   });
 
   rebuildDotsIfNeeded();
+  syncOgDescriptionMeta();
   mountSlot(slotA, 0);
   mountSlot(slotB, 1);
   updateVersionLabel();
