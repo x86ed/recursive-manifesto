@@ -143,7 +143,7 @@
   .tenet.command:hover{ background: var(--bone); color: var(--bg); }
   .tenet.command:active{ transform: scale(.97); }
 
-  /* --- corrupted line 07 --- */
+  /* --- corrupted line 070 --- */
   .glitch-wrap{ white-space: nowrap; }
   .glitch{
     position: relative;
@@ -185,7 +185,7 @@
     overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap;
   }
 
-  /* --- interactive line 10 --- */
+  /* --- interactive line 100 --- */
   .interactive-wrap{
     position: relative;
     display: flex;
@@ -336,7 +336,7 @@
   <div class="stage" id="stage"></div>
 
   <div class="dots" id="dots" role="navigation" aria-label="Manifesto tenets"></div>
-  <div class="nav-hint">SCROLL TO ADVANCE · GOTO 00 TO LOOP</div>
+  <div class="nav-hint">SCROLL TO ADVANCE · GOTO 000 TO LOOP</div>
 
   <div id="readout-overlay" role="dialog" aria-modal="true" aria-label="Manifesto readout" tabindex="-1">
     <div id="readout-content"></div>
@@ -349,7 +349,12 @@
   const FORK_URL = REPO_URL + "/fork";
   // -----------------------------------------------------------
 
+  const REPO_MATCH = REPO_URL.match(/^https:\/\/github\.com\/([^\/]+)\/([^\/]+)$/);
+  const REPO_OWNER = REPO_MATCH ? REPO_MATCH[1] : '';
+  const REPO_NAME = REPO_MATCH ? REPO_MATCH[2] : '';
+
   const versionTagEl = document.getElementById('version-tag');
+  let latestTagName = '';
 
   async function updateVersionLabel(){
     if (!versionTagEl) return;
@@ -360,28 +365,46 @@
       if (!response.ok) throw new Error('Unable to load tags');
       const tags = await response.json();
       const latestTag = Array.isArray(tags) && tags.length ? tags[0].name : '';
+      latestTagName = latestTag || '';
       versionTagEl.textContent = latestTag ? (latestTag.startsWith('v') ? latestTag : 'v' + latestTag) : 'v∞';
     } catch (err) {
+      latestTagName = '';
       versionTagEl.textContent = 'v∞';
     }
   }
 
-  const TENETS = [
-    { label: "00", type: "prose",   text: "Process cannot exist without goals." },
-    { label: "01", type: "prose",   text: "Build only what's unique, steal the rest." },
-    { label: "02", type: "prose",   text: "There is no worthy form without restraint." },
-    { label: "03", type: "prose",   text: "If it cannot be observed it cannot be controlled." },
-    { label: "04", type: "prose",   text: "What cannot bend, breaks. What cannot hold, hollows the whole.", long: true },
-    { label: "05", type: "prose",   text: "There are no observers, only participants." },
-    { label: "06", type: "prose",   text: "There is no improvement without corruption." },
-    { label: "07", type: "corrupt" },
-    { label: "08", type: "prose",   text: "Complacency causes casualty." },
-    { label: "09", type: "prose",   text: "Nothing exists in isolation." },
-    { label: "10", type: "interactive", text: "Complete works are dead works." },
-    { label: "11", type: "command", text: "GOTO 00" }
+  const BASE_TENETS = [
+    { label: "000", type: "prose",   text: "Process cannot exist without goals." },
+    { label: "010", type: "prose",   text: "Build only what's unique, steal the rest." },
+    { label: "020", type: "prose",   text: "There is no worthy form without restraint." },
+    { label: "030", type: "prose",   text: "If it cannot be observed it cannot be controlled." },
+    { label: "040", type: "prose",   text: "What cannot bend, breaks. What cannot hold, hollows the whole.", long: true },
+    { label: "050", type: "prose",   text: "There are no observers, only participants." },
+    { label: "060", type: "prose",   text: "There is no improvement without corruption." },
+    { label: "070", type: "corrupt" },
+    { label: "080", type: "prose",   text: "Complacency causes casualty." },
+    { label: "090", type: "prose",   text: "Nothing exists in isolation." },
+    { label: "100", type: "interactive", text: "Complete works are dead works." },
+    { label: "110", type: "command", text: "GOTO 000" }
   ];
 
-  const TOTAL = TENETS.length;
+  let forkEntryText = '';
+
+  function getRuntimeTenets(){
+    const cmdIndex = BASE_TENETS.findIndex((t) => t.type === 'command');
+    const out = BASE_TENETS.slice();
+    const trimmed = forkEntryText.trim();
+    if (trimmed.length > 0){
+      const forkLine = { label: '105', type: 'forked', text: trimmed };
+      if (cmdIndex >= 0) out.splice(cmdIndex, 0, forkLine);
+      else out.push(forkLine);
+    }
+    return out;
+  }
+
+  function getTotal(){
+    return getRuntimeTenets().length;
+  }
   const EASE = 0.18;
   const IDLE_MS = 140;
   const WHEEL_SENSITIVITY = 1 / 320;
@@ -412,20 +435,21 @@
   stage.appendChild(slotB);
 
   function buildSlideContent(index){
-    const t = TENETS[index];
+    const runtimeTenets = getRuntimeTenets();
+    const t = runtimeTenets[index];
     const wrap = document.createElement('div');
     wrap.className = 'slide-inner';
 
     if (t.type === 'corrupt'){
       wrap.innerHTML =
         '<span class="glitch-wrap"><span class="glitch" data-text=""></span>' +
-        '<span class="sr-only">Tenet 07 could not be recovered.</span></span>';
+        '<span class="sr-only">Tenet 070 could not be recovered.</span></span>';
     } else if (t.type === 'interactive'){
       wrap.innerHTML =
         '<div class="interactive-wrap">' +
           '<div class="tenet-row tenet-row--interactive">' +
             '<span class="index-label">' + t.label + '</span>' +
-            '<input class="tenet-input" type="text" placeholder="" autocomplete="off" spellcheck="false" aria-label="Rewrite tenet 10">' +
+            '<input class="tenet-input" type="text" placeholder="" autocomplete="off" spellcheck="false" aria-label="Rewrite tenet 100">' +
           '</div>' +
           '<div class="fork-row">' +
             '<button class="fork-btn" type="button">' +
@@ -460,7 +484,8 @@
   }
 
   function wireSlideBehavior(slotEl, index){
-    const t = TENETS[index];
+    const runtimeTenets = getRuntimeTenets();
+    const t = runtimeTenets[index];
 
     if (t.type === 'corrupt'){
       const glitchEl = slotEl.querySelector('.glitch');
@@ -488,11 +513,19 @@
       const forkRow = slotEl.querySelector('.fork-row');
       const forkBtn = slotEl.querySelector('.fork-btn');
       slotEl._input = input;
+      input.value = forkEntryText;
+      forkRow.classList.toggle('visible', forkEntryText.trim().length > 0);
       input.addEventListener('input', () => {
-        forkRow.classList.toggle('visible', input.value.trim().length > 0);
+        const prevHasEntry = forkEntryText.trim().length > 0;
+        forkEntryText = input.value;
+        const nextHasEntry = forkEntryText.trim().length > 0;
+        forkRow.classList.toggle('visible', nextHasEntry);
+        if (prevHasEntry !== nextHasEntry){
+          syncRuntimeAfterTenetChange();
+        }
       });
-      forkBtn.addEventListener('click', () => {
-        window.open(FORK_URL, '_blank', 'noopener');
+      forkBtn.addEventListener('click', async () => {
+        await handleForkAction(forkEntryText.trim(), forkBtn);
       });
     }
 
@@ -503,7 +536,8 @@
   }
 
   function startTypeIn(slotEl, index){
-    const t = TENETS[index];
+    const runtimeTenets = getRuntimeTenets();
+    const t = runtimeTenets[index];
     const speed = 26;
     if (t.type === 'prose'){
       const el = slotEl.querySelector('.tenet');
@@ -544,7 +578,7 @@
     if (slotEl._typeInterval){ clearInterval(slotEl._typeInterval); slotEl._typeInterval = null; }
     slotEl._input = null;
     slotEl.innerHTML = '';
-    const index = floorMod(floorValue, TOTAL);
+    const index = floorMod(floorValue, getTotal());
     const inner = buildSlideContent(index);
     slotEl.appendChild(inner);
     slotEl.dataset.floor = String(floorValue);
@@ -572,8 +606,9 @@
 
   // --- dots ---
   function buildDots(){
+    const runtimeTenets = getRuntimeTenets();
     dotsEl.innerHTML = '';
-    TENETS.forEach((t, i) => {
+    runtimeTenets.forEach((t, i) => {
       if (t.type === 'corrupt'){
         const spacer = document.createElement('span');
         spacer.className = 'dot-spacer';
@@ -596,8 +631,34 @@
     if (activeIndex === lastActiveIndex) return;
     lastActiveIndex = activeIndex;
     [...dotsEl.children].forEach((b) => {
-      b.setAttribute('aria-selected', Number(b.dataset.index) === activeIndex ? 'true' : 'false');
+      if (b.classList.contains('dot')){
+        b.setAttribute('aria-selected', Number(b.dataset.index) === activeIndex ? 'true' : 'false');
+      }
     });
+  }
+
+  function getDotSignature(){
+    return getRuntimeTenets().map((t) => t.label + ':' + t.type).join('|');
+  }
+
+  let dotSignature = '';
+
+  function rebuildDotsIfNeeded(){
+    const nextSig = getDotSignature();
+    if (nextSig !== dotSignature){
+      dotSignature = nextSig;
+      buildDots();
+    }
+  }
+
+  function syncRuntimeAfterTenetChange(){
+    const total = getTotal();
+    targetPos = nearestEquivalent(Math.round(targetPos), targetPos);
+    renderedPos = nearestEquivalent(Math.round(renderedPos), renderedPos);
+    const clamped = floorMod(Math.round(targetPos), total);
+    targetPos = clamped;
+    renderedPos = clamped;
+    rebuildDotsIfNeeded();
   }
 
   // --- continuous position engine ---
@@ -606,8 +667,9 @@
   let lastInputTime = 0;
 
   function nearestEquivalent(idx, ref){
-    const k = Math.round((ref - idx) / TOTAL);
-    return idx + k * TOTAL;
+    const total = getTotal();
+    const k = Math.round((ref - idx) / total);
+    return idx + k * total;
   }
   function goTo(index){
     if (readoutActive) return;
@@ -621,6 +683,8 @@
     const now = performance.now();
     const idle = (now - lastInputTime) > IDLE_MS;
     if (idle) targetPos = Math.round(targetPos);
+
+    rebuildDotsIfNeeded();
 
     if (REDUCED_MOTION){
       renderedPos = targetPos;
@@ -650,11 +714,11 @@
 
     if (renderedPos === targetPos && Number.isInteger(targetPos) && targetPos !== lastFocusedFloor){
       lastFocusedFloor = targetPos;
-      startTypeIn(activeSlot, floorMod(targetPos, TOTAL));
+      startTypeIn(activeSlot, floorMod(targetPos, getTotal()));
       if (activeSlot._input) activeSlot._input.focus();
     }
 
-    updateDots(floorMod(Math.round(renderedPos), TOTAL));
+    updateDots(floorMod(Math.round(renderedPos), getTotal()));
 
     requestAnimationFrame(tick);
   }
@@ -700,7 +764,7 @@
   }, { passive: true });
   stage.addEventListener('touchend', () => { dragging = false; }, { passive: true });
 
-  // --- manifesto readout, triggered by GOTO 00 ---
+  // --- manifesto readout, triggered by GOTO 000 ---
   const readoutOverlay = document.getElementById('readout-overlay');
   const readoutContent = document.getElementById('readout-content');
 
@@ -732,8 +796,9 @@
     readoutContent.innerHTML = '';
     readoutOverlay.classList.add('visible');
 
-    for (let i = 0; i < TOTAL; i++){
-      const t = TENETS[i];
+    const runtimeTenets = getRuntimeTenets();
+    for (let i = 0; i < runtimeTenets.length; i++){
+      const t = runtimeTenets[i];
       const line = t.type === 'corrupt' ? '\u00A0' : (t.label + '  ' + t.text);
       await typeReadoutLine(line, 16);
       await wait(160);
@@ -748,7 +813,200 @@
 
   // --- copy manifesto text ---
   function buildManifestoText(){
-    return TENETS.map((t) => t.type === 'corrupt' ? '' : (t.label + '  ' + t.text)).join('\n');
+    return getRuntimeTenets().map((t) => t.type === 'corrupt' ? '' : (t.label + '  ' + t.text)).join('\n');
+  }
+
+  function buildManifestoTxtForFork(entry){
+    const lines = [
+      'The Recursive Manifesto',
+      '',
+      '000 Process cannot exist without goals.',
+      "010 Build only what's unique, steal the rest.",
+      '020 There is no worthy form without restraint.',
+      '030 If it cannot be observed it cannot be controlled.',
+      '040 What cannot bend, breaks. What cannot hold, hollows the whole.',
+      '050 There are no observers, only participants.',
+      '060 There is no improvement without corruption.',
+      '',
+      '080 Complacency causes casualty.',
+      '090 Nothing exists in isolation.',
+      '100 Complete works are dead works.',
+      '105 ' + entry,
+      '110 GOTO 000'
+    ];
+    return lines.join('\n');
+  }
+
+  function buildReadmeForFork(entry){
+    const lines = [
+      '# The Recursive Manifesto',
+      '',
+      '- 000 Process cannot exist without goals.',
+      "- 010 Build only what’s unique, steal the rest.",
+      '- 020 There is no worthy form without restraint.',
+      '- 030 If it cannot be observed it cannot be controlled.',
+      '- 040 What cannot bend, breaks. What cannot hold, hollows the whole.',
+      '- 050 There are no observers, only participants.',
+      '- 060 There is no improvement without corruption.',
+      '-',
+      '- 080 Complacency causes casualty.',
+      '- 090 Nothing exists in isolation.',
+      '- 100 Complete works are dead works.',
+      '- 105 ' + entry,
+      '- 110 GOTO 000'
+    ];
+    return lines.join('\n');
+  }
+
+  function toBase64Utf8(value){
+    const bytes = new TextEncoder().encode(value);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    return btoa(binary);
+  }
+
+  function normalizeTagName(tag){
+    if (!tag) return '';
+    return tag.startsWith('v') ? tag.slice(1) : tag;
+  }
+
+  function bumpMinorTag(tagName){
+    const raw = normalizeTagName(tagName);
+    const match = raw.match(/^(\d+)\.(\d+)\.(\d+)$/);
+    if (!match) return 'v0.1.0';
+    const major = Number(match[1]);
+    const minor = Number(match[2]);
+    return 'v' + major + '.' + (minor + 1) + '.0';
+  }
+
+  async function githubRequest(path, options, token){
+    const headers = {
+      Accept: 'application/vnd.github+json',
+      Authorization: 'Bearer ' + token,
+      'X-GitHub-Api-Version': '2022-11-28'
+    };
+    if (options && options.body) headers['Content-Type'] = 'application/json';
+    const response = await fetch('https://api.github.com' + path, {
+      method: (options && options.method) || 'GET',
+      headers,
+      body: options && options.body ? JSON.stringify(options.body) : undefined
+    });
+    const text = await response.text();
+    let data = null;
+    if (text){
+      try { data = JSON.parse(text); } catch (err) { data = { message: text }; }
+    }
+    if (!response.ok){
+      const msg = data && data.message ? data.message : ('GitHub API error ' + response.status);
+      throw new Error(msg);
+    }
+    return data;
+  }
+
+  async function waitForForkRepo(fullName, token){
+    for (let i = 0; i < 20; i++){
+      try {
+        return await githubRequest('/repos/' + fullName, { method: 'GET' }, token);
+      } catch (err) {
+        await wait(1500);
+      }
+    }
+    throw new Error('Fork is still provisioning. Try again in a few seconds.');
+  }
+
+  async function upsertRepoFile(fullName, path, content, token, message){
+    let sha = null;
+    try {
+      const existing = await githubRequest('/repos/' + fullName + '/contents/' + path, { method: 'GET' }, token);
+      sha = existing && existing.sha ? existing.sha : null;
+    } catch (err) {
+      sha = null;
+    }
+    const body = {
+      message,
+      content: toBase64Utf8(content)
+    };
+    if (sha) body.sha = sha;
+    await githubRequest('/repos/' + fullName + '/contents/' + path, {
+      method: 'PUT',
+      body
+    }, token);
+  }
+
+  async function createMinorTag(fullName, tagName, token){
+    const repo = await githubRequest('/repos/' + fullName, { method: 'GET' }, token);
+    const branch = repo.default_branch;
+    const ref = await githubRequest('/repos/' + fullName + '/git/ref/heads/' + encodeURIComponent(branch), { method: 'GET' }, token);
+    const sha = ref && ref.object ? ref.object.sha : '';
+    if (!sha) throw new Error('Could not resolve default branch SHA.');
+
+    try {
+      await githubRequest('/repos/' + fullName + '/git/refs', {
+        method: 'POST',
+        body: {
+          ref: 'refs/tags/' + tagName,
+          sha
+        }
+      }, token);
+    } catch (err) {
+      const msg = err && err.message ? String(err.message) : '';
+      if (!msg.toLowerCase().includes('reference already exists')) throw err;
+    }
+  }
+
+  async function handleForkAction(entry, forkBtn){
+    if (!entry){
+      alert('Write your fork line first.');
+      return;
+    }
+    if (!REPO_OWNER || !REPO_NAME){
+      window.open(FORK_URL, '_blank', 'noopener');
+      return;
+    }
+
+    const existing = sessionStorage.getItem('recursive_manifesto_gh_pat') || '';
+    const token = window.prompt('GitHub token with repo permissions (used in this tab only):', existing);
+    if (!token) return;
+    sessionStorage.setItem('recursive_manifesto_gh_pat', token);
+
+    const originalText = forkBtn.textContent;
+    forkBtn.disabled = true;
+    forkBtn.textContent = 'Forking...';
+
+    try {
+      const me = await githubRequest('/user', { method: 'GET' }, token);
+      const login = me && me.login ? me.login : '';
+      if (!login) throw new Error('Could not resolve your GitHub username.');
+
+      const forkResult = await githubRequest('/repos/' + REPO_OWNER + '/' + REPO_NAME + '/forks', {
+        method: 'POST',
+        body: { default_branch_only: true }
+      }, token);
+
+      const fullName = (forkResult && forkResult.full_name) ? forkResult.full_name : (login + '/' + REPO_NAME);
+      forkBtn.textContent = 'Stamping 105...';
+      const forkRepo = await waitForForkRepo(fullName, token);
+
+      const manifestContent = buildManifestoTxtForFork(entry);
+      const readmeContent = buildReadmeForFork(entry);
+
+      await upsertRepoFile(fullName, 'MANIFESTO.txt', manifestContent, token, 'fork: add 105 line from user input');
+      await upsertRepoFile(fullName, 'README.md', readmeContent, token, 'docs: include 105 fork line');
+
+      forkBtn.textContent = 'Tagging...';
+      const nextTag = bumpMinorTag(latestTagName);
+      await createMinorTag(fullName, nextTag, token);
+
+      forkBtn.textContent = 'Fork ready';
+      window.open('https://github.com/' + (forkRepo.full_name || fullName), '_blank', 'noopener');
+    } catch (err) {
+      forkBtn.textContent = 'Retry fork';
+      const msg = err && err.message ? err.message : 'Fork failed.';
+      alert(msg);
+    } finally {
+      forkBtn.disabled = false;
+      if (forkBtn.textContent !== 'Fork ready') forkBtn.textContent = originalText;
+    }
   }
 
   const copyBtn = document.querySelector('.copy-btn');
@@ -782,7 +1040,7 @@
     copyResetTimer = setTimeout(() => { copyBtn.textContent = 'COPY'; }, 1500);
   });
 
-  buildDots();
+  rebuildDotsIfNeeded();
   mountSlot(slotA, 0);
   mountSlot(slotB, 1);
   updateVersionLabel();
