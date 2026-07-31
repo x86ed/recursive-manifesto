@@ -184,6 +184,26 @@
     gap: var(--row-gap);
   }
 
+  .tenet-note{
+    margin-top: 0.7em;
+    margin-left: calc(2ch + var(--row-gap));
+    max-width: min(70ch, 74vw);
+    font-family: var(--font-prose);
+    font-size: calc(var(--text-size) * 0.5);
+    line-height: 1.6;
+    color: var(--bone-dim);
+    opacity: 0;
+    transform: translateY(58vh);
+    transition: transform 3.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.6s ease-out;
+  }
+  .tenet-note.crawl-in{
+    opacity: 1;
+    transform: translateY(0);
+  }
+  @media (prefers-reduced-motion: reduce){
+    .tenet-note{ transform: none; transition: opacity 200ms ease; }
+  }
+
   .index-label{
     flex: none;
     font-family: var(--font-prose);
@@ -770,17 +790,17 @@
   }
 
   const BASE_TENETS = [
-    { label: "000", type: "prose",   text: "Process cannot exist without goals." },
-    { label: "010", type: "prose",   text: "Build only what's unique, steal the rest." },
-    { label: "020", type: "prose",   text: "There is no worthy form without restraint." },
-    { label: "030", type: "prose",   text: "If it cannot be observed it cannot be controlled." },
-    { label: "040", type: "prose",   text: "What cannot bend, breaks. What cannot hold, hollows the whole.", long: true },
-    { label: "050", type: "prose",   text: "There are no observers, only participants." },
-    { label: "060", type: "prose",   text: "There is no improvement without corruption." },
+    { label: "000", type: "prose",   text: "Process cannot exist without goals.", note: "A factory without a product is just machinery. Design backward from intent, not forward from tooling." },
+    { label: "010", type: "prose",   text: "Build only what's unique, steal the rest.", note: "Most problems are already solved. Take the 90%, build only the rest — reinventing infrastructure is slop." },
+    { label: "020", type: "prose",   text: "There is no worthy form without restraint.", note: "Do one thing well and discard what doesn't serve it. Half-built ideas are a burden you're handing someone else." },
+    { label: "030", type: "prose",   text: "If it cannot be observed it cannot be controlled.", note: "Vibes are fine, as long as they're grounded in data. A measure that becomes the target stops measuring anything true — Goodhart's Law." },
+    { label: "040", type: "prose",   text: "What cannot bend, breaks. What cannot hold, hollows the whole.", long: true, note: "Absolutes don't last. What works today gets consumed by the process tomorrow — build for that, not for forever." },
+    { label: "050", type: "prose",   text: "There are no observers, only participants.", note: "To observe is to participate — ask Heisenberg, ask Schrödinger, ask the butterfly. If you don't intend to take part, don't watch." },
+    { label: "060", type: "prose",   text: "There is no improvement without corruption.", note: "Knowing which rules to bend, and which to break, is the whole skill. You have agency — own what it costs." },
     { label: "070", type: "corrupt" },
-    { label: "080", type: "prose",   text: "Complacency causes casualty." },
-    { label: "090", type: "prose",   text: "Nothing exists in isolation." },
-    { label: "100", type: "interactive", text: "Complete works are dead works." },
+    { label: "080", type: "prose",   text: "Complacency causes casualty.", note: "Without unyielding attention, we're all asleep at the wheel. Vigilance is the responsibility." },
+    { label: "090", type: "prose",   text: "Nothing exists in isolation.", note: "Tooling, code, process, relationships — none of it stands apart. Everything is one connected system." },
+    { label: "100", type: "interactive", text: "Complete works are dead works.", note: "Everything must change to keep working. Move, or die with the process." },
     { label: "110", type: "command", text: "GOTO 000" }
   ];
 
@@ -861,6 +881,7 @@
             '<span class="index-label">' + t.label + '</span>' +
             '<input class="tenet-input" type="text" placeholder="" autocomplete="off" spellcheck="false" aria-label="Rewrite tenet 100">' +
           '</div>' +
+          (t.note ? '<div class="tenet-note">' + t.note + '</div>' : '') +
           '<div class="fork-row">' +
             '<button class="fork-btn" type="button">' +
               '<svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">' +
@@ -882,13 +903,15 @@
         '<div class="tenet-row">' +
           '<span class="index-label">' + t.label + '</span>' +
           '<span class="tenet command" aria-label="' + t.text + '"></span>' +
-        '</div>';
+        '</div>' +
+        (t.note ? '<div class="tenet-note">' + t.note + '</div>' : '');
     } else {
       wrap.innerHTML =
         '<div class="tenet-row">' +
           '<span class="index-label">' + t.label + '</span>' +
           '<span class="tenet" aria-label="' + t.text + '"></span>' +
-        '</div>';
+        '</div>' +
+        (t.note ? '<div class="tenet-note">' + t.note + '</div>' : '');
     }
     return wrap;
   }
@@ -985,6 +1008,11 @@
       if (i >= fullText.length) clearInterval(id);
     }, speed);
     return id;
+  }
+
+  function startNoteCrawl(slotEl){
+    const noteEl = slotEl.querySelector('.tenet-note');
+    if (noteEl) noteEl.classList.add('crawl-in');
   }
 
   function mountSlot(slotEl, floorValue){
@@ -1129,6 +1157,7 @@
     if (renderedPos === targetPos && Number.isInteger(targetPos) && targetPos !== lastFocusedFloor){
       lastFocusedFloor = targetPos;
       startTypeIn(activeSlot, floorMod(targetPos, getTotal()));
+      startNoteCrawl(activeSlot);
       if (activeSlot._input) activeSlot._input.focus();
     }
 
